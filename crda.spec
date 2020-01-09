@@ -1,9 +1,9 @@
 %define         crda_version    1.1.3
-%define         regdb_version   2013.11.27
+%define         regdb_version   2014.06.13
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        5%{?dist}
+Release:        1%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
@@ -21,7 +21,7 @@ Requires:       udev, iw
 Requires:       systemd >= 190
 
 Source0:        http://www.kernel.org/pub/software/network/crda/crda-%{crda_version}.tar.bz2
-Source1:        http://www.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-%{regdb_version}.tar.bz2
+Source1:        http://www.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-%{regdb_version}.tar.xz
 Source2:        setregdomain
 Source3:        setregdomain.1
 
@@ -95,6 +95,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jul 28 2014 John W. Linville <linville@redhat.com> - 1.1.3_2014.06.13-1
+- Update wireless-regdb to version 2014.06.13
+- Add logger commands to setregdomain to make it more communicative
+
 * Fri Feb 28 2014 John W. Linville <linville@redhat.com> - 1.1.3_2013.11.27-5
 - Accomodate relative pathnames in the symlink for /etc/localtime
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2009-2010 Red Hat, Inc.  All rights reserved.
+# Copyright 2009-2014 Red Hat, Inc.  All rights reserved.
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,8 @@
 
 REGDOMAIN=/etc/sysconfig/regdomain
 LOCALTIME=/etc/localtime
+
+LOGGER="/usr/bin/logger -t crda"
 
 getcountry() {
 	while read c a z r
@@ -35,7 +37,7 @@ then
 	. $REGDOMAIN
 	if [ -n "$COUNTRY" ]
 	then
-		/sbin/iw reg set $COUNTRY
+		/usr/sbin/iw reg set $COUNTRY
 		exit
 	fi
 fi
@@ -46,13 +48,13 @@ then
 	ZONE=${ZONE#/usr/share/zoneinfo/}
 	ZONE=${ZONE#../usr/share/zoneinfo/}
 else
-	echo "Timezone information not found!  Unable to set regulatory domain."
+	$LOGGER -s "Timezone information not found!  Unable to set regulatory domain."
 	exit
 fi
 
 if [ -z "$ZONE" ]
 then
-	echo "Timezone information not set!  Unable to set regulatory domain."
+	$LOGGER -s "Timezone information not set!  Unable to set regulatory domain."
 	exit
 fi
 
@@ -60,8 +62,9 @@ COUNTRY=$(getcountry)
 
 if [ -z "$COUNTRY" ]
 then
-	echo "Could not determine country!  Unable to set regulatory domain."
+	$LOGGER -s "Could not determine country!  Unable to set regulatory domain."
 	exit
 fi
 
-/sbin/iw reg set $COUNTRY
+$LOGGER "setting regulatory domain to $COUNTRY based on timezone ($ZONE)"
+/usr/sbin/iw reg set $COUNTRY
