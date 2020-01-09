@@ -116,10 +116,10 @@ static int error_handler(struct sockaddr_nl __attribute__((unused)) *nla,
 	exit(err->error);
 }
 
-static int put_reg_rule(struct ieee80211_reg_rule *rule, struct nl_msg *msg)
+static int put_reg_rule(const struct ieee80211_reg_rule *rule, struct nl_msg *msg)
 {
-	struct ieee80211_freq_range *freq_range;
-	struct ieee80211_power_rule *power_rule;
+	const struct ieee80211_freq_range *freq_range;
+	const struct ieee80211_power_rule *power_rule;
 
 	freq_range = &rule->freq_range;
 	power_rule = &rule->power_rule;
@@ -141,15 +141,17 @@ int main(int argc, char **argv)
 {
 	int fd = -1;
 	int i = 0, j, r;
-	char alpha2[3] = {}; /* NUL-terminate */
+	char alpha2[3];
 	char *env_country;
 	struct nl80211_state nlstate;
 	struct nl_cb *cb = NULL;
 	struct nl_msg *msg;
 	int finished = 0;
 
+	memset(alpha2, 0, 3);
+
 	struct nlattr *nl_reg_rules;
-	struct ieee80211_regdomain *rd = NULL;
+	const struct ieee80211_regdomain *rd = NULL;
 
 	const char *regdb_paths[] = {
 		"/usr/local/lib/crda/regulatory.bin", /* Users/preloads can override */
@@ -170,7 +172,7 @@ int main(int argc, char **argv)
 		return -EINVAL;
 	}
 
-	if (!is_valid_regdom(env_country)) {
+	if (!reglib_is_valid_regdom(env_country)) {
 		fprintf(stderr, "COUNTRY environment variable must be an "
 			"ISO ISO 3166-1-alpha-2 (uppercase) or 00\n");
 		return -EINVAL;
@@ -199,7 +201,7 @@ int main(int argc, char **argv)
 
 	r = nl80211_init(&nlstate);
 	if (r) {
-		free(rd);
+		free((struct ieee80211_regdomain *) rd);
 		return -EIO;
 	}
 
@@ -267,7 +269,7 @@ nla_put_failure:
 	nlmsg_free(msg);
 out:
 	nl80211_cleanup(&nlstate);
-	free(rd);
+	free((struct ieee80211_regdomain *) rd);
 
 	return r;
 }

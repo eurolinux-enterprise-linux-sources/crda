@@ -1,9 +1,9 @@
-%define         crda_version    1.1.3
-%define         regdb_version   2014.06.13
+%define         crda_version    3.13
+%define         regdb_version   2015.10.22
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
@@ -18,14 +18,17 @@ BuildRequires:  pkgconfig python m2crypto
 
 Requires:       udev, iw
 
-Source0:        http://wireless.kernel.org/download/crda/crda-%{crda_version}.tar.bz2
+Source0:        http://wireless.kernel.org/download/crda/crda-%{crda_version}.tar.xz
 Source1:        http://wireless.kernel.org/download/wireless-regdb/wireless-regdb-%{regdb_version}.tar.xz
 Source2:        setregdomain
 Source3:        setregdomain.1
 
 # Add udev rule to call setregdomain on wireless device add
 Patch0:         regulatory-rules-setregdomain.patch
-
+# Add DESTDIR to path for libreg installation
+Patch1:         crda-libreg-DESTDIR.patch
+# Do not call ldconfig in crda Makefile
+Patch2:         crda-remove-ldconfig.patch
 
 %description
 CRDA acts as the udev helper for communication between the kernel
@@ -34,41 +37,62 @@ for communication. CRDA is intended to be run only through udev
 communication from the kernel.
 
 
+%package devel
+Summary:        Header files for use with libreg.
+Group:          Development/System
+
+
+%description devel
+Header files to make use of libreg for accessing regulatory info.
+
+
 %prep
 %setup -q -c
 %setup -q -T -D -a 1
 
 %patch0 -p1 -b .setregdomain
 
+cd crda-%{crda_version}
+%patch1 -p1 -b .destdir
+%patch2 -p1 -b .ldconfig-remove
 
 %build
+export CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}"
+export SBINDIR="%{_sbindir}/" LIBDIR="%{_libdir}/"
 
 # Use our own signing key to generate regulatory.bin
 cd wireless-regdb-%{regdb_version}
 
-make %{?_smp_mflags} CFLAGS="%{optflags}" maintainer-clean
-make %{?_smp_mflags} CFLAGS="%{optflags}" REGDB_PRIVKEY=key.priv.pem REGDB_PUBKEY=key.pub.pem
+make %{?_smp_mflags} maintainer-clean
+make %{?_smp_mflags} REGDB_PRIVKEY=key.priv.pem REGDB_PUBKEY=key.pub.pem
 
 # Build CRDA using the new key and regulatory.bin from above
 cd ../crda-%{crda_version}
 cp ../wireless-regdb-%{regdb_version}/key.pub.pem pubkeys
 
-make %{?_smp_mflags} CFLAGS="%{optflags}" REG_BIN=../wireless-regdb-%{regdb_version}/regulatory.bin
+make %{?_smp_mflags} REG_BIN=../wireless-regdb-%{regdb_version}/regulatory.bin
 
 
 %install
 rm -rf %{buildroot}
+export SBINDIR="%{_sbindir}/" LIBDIR="%{_libdir}/"
 
 cd crda-%{crda_version}
+cp LICENSE LICENSE.crda
 cp README README.crda
-make install DESTDIR=%{buildroot} PREFIX='' MANDIR=%{_mandir}
+make install DESTDIR=%{buildroot}
 
 cd ../wireless-regdb-%{regdb_version}
+cp LICENSE LICENSE.wireless-regdb
 cp README README.wireless-regdb
-make install DESTDIR=%{buildroot} PREFIX='' MANDIR=%{_mandir}
+make install DESTDIR=%{buildroot} CRDA_PATH=/lib/crda
 
-install -D -pm 0755 %SOURCE2 %{buildroot}/sbin
+install -D -pm 0755 %SOURCE2 %{buildroot}/%{_sbindir}
 install -D -pm 0644 %SOURCE3 %{buildroot}%{_mandir}/man1/setregdomain.1
+
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 
 %clean
@@ -77,9 +101,10 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-/sbin/%{name}
-/sbin/regdbdump
-/sbin/setregdomain
+%{_sbindir}/%{name}
+%{_sbindir}/regdbdump
+%{_sbindir}/setregdomain
+%{_libdir}/libreg.so
 /lib/udev/rules.d/85-regulatory.rules
 # location of database is hardcoded to /lib/%{name}
 /lib/%{name}
@@ -90,8 +115,26 @@ rm -rf %{buildroot}
 %doc crda-%{crda_version}/LICENSE crda-%{crda_version}/README.crda
 %doc wireless-regdb-%{regdb_version}/README.wireless-regdb
 
+%files devel
+%{_includedir}/reglib/nl80211.h
+%{_includedir}/reglib/regdb.h
+%{_includedir}/reglib/reglib.h
+
 
 %changelog
+* Thu Mar 17 2016 John W. Linville <linville@redhat.com> 3.13_2015.10.22-3
+- Actually complete transition from /sbin to /usr/sbin (udev rule)
+
+* Thu Mar 17 2016 John W. Linville <linville@redhat.com> 3.13_2015.10.22-2
+- Complete transition from /sbin to /usr/sbin
+
+* Fri Feb  5 2016 John W. Linville <linville@redhat.com> 3.13_2015.10.22-1
+- Update for crda version 3.13
+
+* Wed Nov  4 2015 John W. Linville <linville@redhat.com> 1.1.3_2015.10.22-1
+- Update wireless-regdb to version 2015.10.22
+- Correct bogus dates earlier in changelog
+
 * Tue Jul  1 2014 John W. Linville <linville@redhat.com> 1.1.3_2014.06.13-1
 - Update wireless-regdb to version 2014.06.13
 
@@ -118,10 +161,10 @@ rm -rf %{buildroot}
 * Tue Jan 26 2010 John W. Linville <linville@redhat.com> 1.1.1_2009.11.25-1
 - Update for crda version 1.1.1
 
-* Tue Dec 21 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.25-5
+* Mon Dec 21 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.25-5
 - Remove unnecessary explicit Requries for libgcrypt and libnl -- oops!
 
-* Tue Dec 21 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.25-4
+* Mon Dec 21 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.25-4
 - Add libgcrypt and libnl to Requires
 
 * Mon Dec 21 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.25-3
@@ -137,7 +180,7 @@ rm -rf %{buildroot}
 * Wed Nov 11 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.11.10-1
 - Update wireless-regdb to version 2009.11.10 
 
-* Wed Oct  1 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.09.08-3
+* Thu Oct  1 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.09.08-3
 - Move regdb to /lib/crda to facilitate /usr mounted over wireless network
 
 * Wed Sep  9 2009 John W. Linville <linville@redhat.com> 1.1.0_2009.09.08-2
