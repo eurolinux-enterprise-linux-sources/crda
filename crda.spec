@@ -1,5 +1,5 @@
-%define         crda_version    1.1.1
-%define         regdb_version   2010.11.22
+%define         crda_version    1.1.3
+%define         regdb_version   2014.06.13
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
@@ -19,7 +19,7 @@ BuildRequires:  pkgconfig python m2crypto
 Requires:       udev, iw
 
 Source0:        http://wireless.kernel.org/download/crda/crda-%{crda_version}.tar.bz2
-Source1:        http://wireless.kernel.org/download/wireless-regdb/wireless-regdb-%{regdb_version}.tar.bz2
+Source1:        http://wireless.kernel.org/download/wireless-regdb/wireless-regdb-%{regdb_version}.tar.xz
 Source2:        setregdomain
 Source3:        setregdomain.1
 
@@ -92,7 +92,15 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Tue Nov 23 2010 John W. Linville <linville@redhat.com> 1.1.0_2010.11.22-1
+* Tue Jul  1 2014 John W. Linville <linville@redhat.com> 1.1.3_2014.06.13-1
+- Update wireless-regdb to version 2014.06.13
+
+* Fri Dec  6 2013 John W. Linville <linville@redhat.com> 1.1.3_2013.11.27-1
+- Update for crda version 1.1.3
+- Update wireless-regdb to version 2013.11.27 
+- Correct version in previous changelog entry
+
+* Tue Nov 23 2010 John W. Linville <linville@redhat.com> 1.1.1_2010.11.22-1
 - Update wireless-regdb to version 2010.11.22 
 
 * Thu Feb 25 2010 John W. Linville <linville@redhat.com> 1.1.1_2009.11.25-3
