@@ -1,9 +1,9 @@
-%define         crda_version    1.1.3
-%define         regdb_version   2015.04.06
+%define         crda_version    3.13
+%define         regdb_version   2016.02.08
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
@@ -20,14 +20,17 @@ BuildRequires:  openssl
 Requires:       udev, iw
 Requires:       systemd >= 190
 
-Source0:        http://www.kernel.org/pub/software/network/crda/crda-%{crda_version}.tar.bz2
+Source0:        http://www.kernel.org/pub/software/network/crda/crda-%{crda_version}.tar.xz
 Source1:        http://www.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-%{regdb_version}.tar.xz
 Source2:        setregdomain
 Source3:        setregdomain.1
 
 # Add udev rule to call setregdomain on wireless device add
 Patch0:         regulatory-rules-setregdomain.patch
-Patch1:         crda-display-DFS-regulatory-domain-in-regdbdump.patch
+# Add DESTDIR to path for libreg installation
+Patch1:         crda-libreg-DESTDIR.patch
+# Do not call ldconfig in crda Makefile
+Patch2:         crda-remove-ldconfig.patch
 
 
 %description
@@ -37,6 +40,15 @@ for communication. CRDA is intended to be run only through udev
 communication from the kernel.
 
 
+%package devel
+Summary:        Header files for use with libreg.
+Group:          Development/System
+
+
+%description devel
+Header files to make use of libreg for accessing regulatory info.
+
+
 %prep
 %setup -q -c
 %setup -q -T -D -a 1
@@ -44,11 +56,12 @@ communication from the kernel.
 %patch0 -p1 -b .setregdomain
 
 cd crda-%{crda_version}
-%patch1 -p1 -b .display-DFS
+%patch1 -p1 -b .destdir
+%patch2 -p1 -b .ldconfig-remove
 
 
 %build
-export CFLAGS="%{optflags}"
+export CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}"
 
 # Use our own signing key to generate regulatory.bin
 cd wireless-regdb-%{regdb_version}
@@ -60,22 +73,30 @@ make %{?_smp_mflags} REGDB_PRIVKEY=key.priv.pem REGDB_PUBKEY=key.pub.pem
 cd ../crda-%{crda_version}
 cp ../wireless-regdb-%{regdb_version}/key.pub.pem pubkeys
 
-make %{?_smp_mflags} REG_BIN=../wireless-regdb-%{regdb_version}/regulatory.bin
+make %{?_smp_mflags} SBINDIR=%{_sbindir}/ LIBDIR=%{_libdir}/ \
+	REG_BIN=../wireless-regdb-%{regdb_version}/regulatory.bin
 
 
 %install
 rm -rf %{buildroot}
 
 cd crda-%{crda_version}
+cp LICENSE LICENSE.crda
 cp README README.crda
-make install DESTDIR=%{buildroot} PREFIX='' MANDIR=%{_mandir}
+make install DESTDIR=%{buildroot} MANDIR=%{_mandir}/ \
+	SBINDIR=%{_sbindir}/ LIBDIR=%{_libdir}/
 
 cd ../wireless-regdb-%{regdb_version}
+cp LICENSE LICENSE.wireless-regdb
 cp README README.wireless-regdb
-make install DESTDIR=%{buildroot} PREFIX='' MANDIR=%{_mandir}
+make install DESTDIR=%{buildroot} MANDIR=%{_mandir}
 
-install -D -pm 0755 %SOURCE2 %{buildroot}/sbin
+install -D -pm 0755 %SOURCE2 %{buildroot}%{_sbindir}
 install -D -pm 0644 %SOURCE3 %{buildroot}%{_mandir}/man1/setregdomain.1
+
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 
 %clean
@@ -84,21 +105,37 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-/sbin/%{name}
-/sbin/regdbdump
-/sbin/setregdomain
+%{_sbindir}/%{name}
+%{_sbindir}/regdbdump
+%{_sbindir}/setregdomain
+%{_libdir}/libreg.so
 /lib/udev/rules.d/85-regulatory.rules
-# location of database is hardcoded to /lib/%{name}
-/lib/%{name}
+# location of database is hardcoded to /usr/lib/%{name}
+/usr/lib/%{name}
 %{_mandir}/man1/setregdomain.1*
 %{_mandir}/man5/regulatory.bin.5*
 %{_mandir}/man8/crda.8*
 %{_mandir}/man8/regdbdump.8*
+%license crda-%{crda_version}/LICENSE.crda
+%license wireless-regdb-%{regdb_version}/LICENSE.wireless-regdb
 %doc crda-%{crda_version}/LICENSE crda-%{crda_version}/README.crda
 %doc wireless-regdb-%{regdb_version}/README.wireless-regdb
 
 
+%files devel
+%{_includedir}/reglib/nl80211.h
+%{_includedir}/reglib/regdb.h
+%{_includedir}/reglib/reglib.h
+
+
 %changelog
+* Tue Feb 09 2016 John W. Linville <linville@redhat.com> - 3.13_2016.02.08-1
+- Update crda to version 3.13
+- Update wireless-regdb to version 2016.02.08
+
+* Mon Jan 18 2016 John W. Linville <linville@redhat.com> - 1.1.3_2015.12.14-1
+- Update wireless-regdb to version 2015.12.14
+
 * Tue Apr 21 2015 John W. Linville <linville@redhat.com> - 1.1.3_2015.04.06-2
 - Update wireless-regdb to version 2015.04.06
 - Add patch for regdbdump to display DFS region
