@@ -1,0 +1,51 @@
+From d169aaf0290c2a6f8b38769e22ced4d3850da7a9 Mon Sep 17 00:00:00 2001
+From: Zefir Kurtisi <zefir.kurtisi@neratec.com>
+Date: Wed, 3 Apr 2013 15:51:58 +0200
+Subject: [PATCH] crda: display DFS regulatory domain in regdbdump
+
+Signed-off-by: Zefir Kurtisi <zefir.kurtisi@neratec.com>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ print-regdom.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/print-regdom.c b/print-regdom.c
+index 075eea890579..9c65872d4775 100644
+--- a/print-regdom.c
++++ b/print-regdom.c
+@@ -7,6 +7,22 @@
+ 
+ #include "reglib.h"
+ 
++static const char *dfs_domain_name(enum nl80211_dfs_regions region)
++{
++	switch (region) {
++	case NL80211_DFS_UNSET:
++		return "DFS-UNSET";
++	case NL80211_DFS_FCC:
++		return "DFS-FCC";
++	case NL80211_DFS_ETSI:
++		return "DFS-ETSI";
++	case NL80211_DFS_JP:
++		return "DFS-JP";
++	default:
++		return "DFS-invalid";
++	}
++}
++
+ static void print_reg_rule(struct ieee80211_reg_rule *rule)
+ {
+ 	struct ieee80211_freq_range *freq;
+@@ -57,7 +73,8 @@ static void print_reg_rule(struct ieee80211_reg_rule *rule)
+ void print_regdom(struct ieee80211_regdomain *rd)
+ {
+ 	unsigned int i;
+-	printf("country %.2s:\n", rd->alpha2);
++	printf("country %.2s: %s\n", rd->alpha2,
++	       dfs_domain_name(rd->dfs_region));
+ 	for (i = 0; i < rd->n_reg_rules; i++)
+ 		print_reg_rule(&rd->reg_rules[i]);
+ 	printf("\n");
+-- 
+1.8.1.4
+

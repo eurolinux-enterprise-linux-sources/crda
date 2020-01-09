@@ -44,18 +44,17 @@ fi
 
 if [ -f "$LOCALTIME" ]
 then
-	ZONE=$(readlink $LOCALTIME)
+	ZONE=$(readlink -f $LOCALTIME)
 	ZONE=${ZONE#/usr/share/zoneinfo/}
-	ZONE=${ZONE#../usr/share/zoneinfo/}
 else
 	$LOGGER -s "Timezone information not found!  Unable to set regulatory domain."
-	exit
+	exit 1
 fi
 
-if [ -z "$ZONE" ]
+if [ -z "$ZONE" -o "$ZONE" = "$LOCALTIME" ]
 then
-	$LOGGER -s "Timezone information not set!  Unable to set regulatory domain."
-	exit
+	$LOGGER -s "Could not determine timezone!  Unable to set regulatory domain."
+	exit 1
 fi
 
 COUNTRY=$(getcountry)
@@ -63,7 +62,7 @@ COUNTRY=$(getcountry)
 if [ -z "$COUNTRY" ]
 then
 	$LOGGER -s "Could not determine country!  Unable to set regulatory domain."
-	exit
+	exit 1
 fi
 
 $LOGGER "setting regulatory domain to $COUNTRY based on timezone ($ZONE)"

@@ -1,9 +1,9 @@
 %define         crda_version    1.1.3
-%define         regdb_version   2014.06.13
+%define         regdb_version   2015.04.06
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
@@ -27,6 +27,7 @@ Source3:        setregdomain.1
 
 # Add udev rule to call setregdomain on wireless device add
 Patch0:         regulatory-rules-setregdomain.patch
+Patch1:         crda-display-DFS-regulatory-domain-in-regdbdump.patch
 
 
 %description
@@ -41,6 +42,9 @@ communication from the kernel.
 %setup -q -T -D -a 1
 
 %patch0 -p1 -b .setregdomain
+
+cd crda-%{crda_version}
+%patch1 -p1 -b .display-DFS
 
 
 %build
@@ -95,6 +99,11 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Apr 21 2015 John W. Linville <linville@redhat.com> - 1.1.3_2015.04.06-2
+- Update wireless-regdb to version 2015.04.06
+- Add patch for regdbdump to display DFS region
+- Make some improvements to setregdomain and its man page
+
 * Mon Jul 28 2014 John W. Linville <linville@redhat.com> - 1.1.3_2014.06.13-1
 - Update wireless-regdb to version 2014.06.13
 - Add logger commands to setregdomain to make it more communicative
