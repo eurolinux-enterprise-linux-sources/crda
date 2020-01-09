@@ -1,9 +1,9 @@
 %define         crda_version    1.1.1
-%define         regdb_version   2009.11.25
+%define         regdb_version   2010.11.22
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        3%{?dist}
+Release:        1%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
@@ -92,6 +92,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Nov 23 2010 John W. Linville <linville@redhat.com> 1.1.0_2010.11.22-1
+- Update wireless-regdb to version 2010.11.22 
+
 * Thu Feb 25 2010 John W. Linville <linville@redhat.com> 1.1.1_2009.11.25-3
 - Correct license tag from BSD to ISC
 - Comment purpose of regulatory-rules-setregdomain.patch
