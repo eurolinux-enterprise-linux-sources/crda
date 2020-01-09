@@ -1,0 +1,12 @@
+diff -up crda-3.18_2017.12.23/wireless-regdb-2017.12.23/Makefile.orig crda-3.18_2017.12.23/wireless-regdb-2017.12.23/Makefile
+--- crda-3.18_2017.12.23/wireless-regdb-2017.12.23/Makefile.orig	2018-04-30 14:56:17.934744786 -0400
++++ crda-3.18_2017.12.23/wireless-regdb-2017.12.23/Makefile	2018-04-30 14:57:15.182554167 -0400
+@@ -59,7 +59,7 @@ regulatory.bin: db.txt $(REGDB_PRIVKEY)
+ 	@echo Generating $@ digitally signed by $(REGDB_AUTHOR)...
+ 	./db2bin.py regulatory.bin db.txt $(REGDB_PRIVKEY)
+ 
+-regulatory.db: db.txt db2fw.py
++regulatory.db: db.txt db2fw.py $(REGDB_PRIVKEY) $(REGDB_PUBCERT)
+ 	@echo "Generating $@"
+ 	./db2fw.py regulatory.db db.txt
+ 

@@ -1,14 +1,16 @@
-%define         crda_version    3.13
-%define         regdb_version   2016.02.08
+%define         crda_version    3.18
+%define         regdb_version   2018.05.31
+
+%global         _firmwarepath   /usr/lib/firmware
 
 Name:           crda
 Version:        %{crda_version}_%{regdb_version}
-Release:        1%{?dist}
+Release:        4%{?dist}
 Summary:        Regulatory compliance daemon for 802.11 wireless networking
 
 Group:          System Environment/Base
 License:        ISC
-URL:            http://www.linuxwireless.org/en/developers/Regulatory/CRDA
+URL:            http://wireless.kernel.org/en/developers/Regulatory/CRDA
 BuildRoot:      %{_tmppath}/%{name}-%{crda_version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  kernel-headers >= 2.6.27
@@ -27,10 +29,10 @@ Source3:        setregdomain.1
 
 # Add udev rule to call setregdomain on wireless device add
 Patch0:         regulatory-rules-setregdomain.patch
-# Add DESTDIR to path for libreg installation
-Patch1:         crda-libreg-DESTDIR.patch
 # Do not call ldconfig in crda Makefile
-Patch2:         crda-remove-ldconfig.patch
+Patch1:         crda-remove-ldconfig.patch
+# Ensure rebuild of regulatory.db after signature regeneration
+Patch2:         wireless-regdb-fw-dependency.patch
 
 
 %description
@@ -56,23 +58,18 @@ Header files to make use of libreg for accessing regulatory info.
 %patch0 -p1 -b .setregdomain
 
 cd crda-%{crda_version}
-%patch1 -p1 -b .destdir
-%patch2 -p1 -b .ldconfig-remove
+%patch1 -p1 -b .ldconfig-remove
+cd ../wireless-regdb-%{regdb_version}
+%patch2 -p2 -b .fwsign
 
 
 %build
 export CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}"
 
-# Use our own signing key to generate regulatory.bin
-cd wireless-regdb-%{regdb_version}
-
-make %{?_smp_mflags} maintainer-clean
-make %{?_smp_mflags} REGDB_PRIVKEY=key.priv.pem REGDB_PUBKEY=key.pub.pem
-
-# Build CRDA using the new key and regulatory.bin from above
-cd ../crda-%{crda_version}
-cp ../wireless-regdb-%{regdb_version}/key.pub.pem pubkeys
-
+# Build CRDA using the sforshee.key.pub.pem key and regulatory.bin
+cd crda-%{crda_version}
+cp ../wireless-regdb-%{regdb_version}/sforshee.key.pub.pem pubkeys
+ 
 make %{?_smp_mflags} SBINDIR=%{_sbindir}/ LIBDIR=%{_libdir}/ \
 	REG_BIN=../wireless-regdb-%{regdb_version}/regulatory.bin
 
@@ -89,7 +86,8 @@ make install DESTDIR=%{buildroot} MANDIR=%{_mandir}/ \
 cd ../wireless-regdb-%{regdb_version}
 cp LICENSE LICENSE.wireless-regdb
 cp README README.wireless-regdb
-make install DESTDIR=%{buildroot} MANDIR=%{_mandir}
+make install DESTDIR=%{buildroot} MANDIR=%{_mandir} \
+        FIRMWARE_PATH=%{_firmwarepath}
 
 install -D -pm 0755 %SOURCE2 %{buildroot}%{_sbindir}
 install -D -pm 0644 %SOURCE3 %{buildroot}%{_mandir}/man1/setregdomain.1
@@ -110,10 +108,13 @@ rm -rf %{buildroot}
 %{_sbindir}/setregdomain
 %{_libdir}/libreg.so
 /lib/udev/rules.d/85-regulatory.rules
-# location of database is hardcoded to /usr/lib/%{name}
+# location of database is hardcoded to /usr/lib/%%{name}
 /usr/lib/%{name}
+%{_firmwarepath}/regulatory.db
+%{_firmwarepath}/regulatory.db.p7s
 %{_mandir}/man1/setregdomain.1*
 %{_mandir}/man5/regulatory.bin.5*
+%{_mandir}/man5/regulatory.db.5*
 %{_mandir}/man8/crda.8*
 %{_mandir}/man8/regdbdump.8*
 %license crda-%{crda_version}/LICENSE.crda
@@ -129,6 +130,19 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Aug 09 2018 John W. Linville <linville@redhat.com> - 3.18_2018.05.31-4
+- Update changelog and bump Release
+
+* Thu Aug 09 2018 Stanislaw Gruszka <sgruszka@redhat.com> - 3.18_2018.05.31-3
+- Update wireless-regdb to version 2018.05.31
+
+* Fri Jun 01 2018 John W. Linville <linville@redhat.com> - 3.18_2017.12.23-2
+- Update URL in package header
+
+* Thu May 31 2018 John W. Linville <linville@redhat.com> - 3.18_2017.12.23-1
+- Update crda to version 3.18
+- Update wireless-regdb to version 2017.12.23
+
 * Tue Feb 09 2016 John W. Linville <linville@redhat.com> - 3.13_2016.02.08-1
 - Update crda to version 3.13
 - Update wireless-regdb to version 2016.02.08

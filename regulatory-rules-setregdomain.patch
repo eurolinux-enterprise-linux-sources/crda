@@ -1,6 +1,6 @@
-diff -up crda-3.13_2016.02.08/crda-3.13/udev/regulatory.rules.setregdomain crda-3.13_2016.02.08/crda-3.13/udev/regulatory.rules
---- crda-3.13_2016.02.08/crda-3.13/udev/regulatory.rules.setregdomain	2012-01-18 21:19:09.000000000 -0500
-+++ crda-3.13_2016.02.08/crda-3.13/udev/regulatory.rules	2013-01-25 14:10:57.818931320 -0500
+diff -up crda-3.18_2018.05.09/crda-3.18/udev/regulatory.rules.setregdomain crda-3.18_2018.05.09/crda-3.18/udev/regulatory.rules
+--- crda-3.18_2018.05.09/crda-3.18/udev/regulatory.rules.setregdomain	2012-01-18 21:19:09.000000000 -0500
++++ crda-3.18_2018.05.09/crda-3.18/udev/regulatory.rules	2013-01-25 14:10:57.818931320 -0500
 @@ -2,4 +2,6 @@
  # For more information see:
  # http://wireless.kernel.org/en/developers/Regulatory/CRDA

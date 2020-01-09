@@ -1,7 +1,7 @@
 # Modify as you see fit, note this is built into crda,
 # so if you change it here you will have to change crda.c
 REG_BIN?=/usr/lib/crda/regulatory.bin
-REG_GIT?=git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-regdb.git
+REG_GIT?=git://git.kernel.org/pub/scm/linux/kernel/git/sforshee/wireless-regdb.git
 
 PREFIX ?= /usr/
 MANDIR ?= $(PREFIX)/share/man/
@@ -28,10 +28,11 @@ RUNTIME_PUBKEY_DIR?=/etc/wireless-regdb/pubkeys
 CFLAGS += -O2 -fpic
 CFLAGS += -std=gnu99 -Wall -Werror -pedantic
 CFLAGS += -Wall -g
-LDLIBS += -lm
 LDLIBREG += -lreg
+LDLIBS += $(LDLIBREG)
+LDLIBS += -lm
 LIBREG += libreg.so
-LDFLAGS += -L ./ $(LDLIBREG)
+LDFLAGS += -L ./
 
 all: all_noverify verify
 
@@ -119,13 +120,13 @@ $(LIBREG): regdb.h reglib.h reglib.c
 
 install-libreg-headers:
 	$(NQ) '  INSTALL  libreg-headers'
-	$(Q)mkdir -p $(INCLUDE_DIR)
-	$(Q)cp *.h $(INCLUDE_DIR)/
+	$(Q)mkdir -p $(DESTDIR)/$(INCLUDE_DIR)
+	$(Q)cp *.h $(DESTDIR)/$(INCLUDE_DIR)/
 
 install-libreg:
 	$(NQ) '  INSTALL  libreg'
-	$(Q)mkdir -p $(LIBDIR)
-	$(Q)cp $(LIBREG) $(LIBDIR)/
+	$(Q)mkdir -p $(DESTDIR)/$(LIBDIR)
+	$(Q)cp $(LIBREG) $(DESTDIR)/$(LIBDIR)/
 	$(Q)ldconfig
 
 %.o: %.c regdb.h $(LIBREG)
